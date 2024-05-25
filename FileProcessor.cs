@@ -33,13 +33,14 @@ class FileProcessor
             if( indexfile != null ) {
                 var stream = indexfile.Open();
                 var xdoc = XDocument.Load(stream);
+
                 var name = xdoc.XPathSelectElement(options.NameXmlPath)?.Value ?? String.Empty;
                 var email = xdoc.XPathSelectElement(options.EmailXmlPath)?.Value ?? String.Empty;
                 var appno = xdoc.XPathSelectElement(options.ApplicationNoPath)?.Value ?? String.Empty;
                 if( appno != "" ) {
-                    options.OutputPath = Path.Combine(options.BasePath, $"{appno}-{Guid.NewGuid()}");                    
+                    options.OutputPath = Path.Combine(options.BasePath, $"{appno}-{Guid.NewGuid()}");
                 } else {
-                    throw new Exception($"Missing valid application number in '{options.IndexFileName}'");
+                    throw new Exception($"Missing field '{options.ApplicationNoPath}' in '{options.IndexFileName}'");
                 }
                 
                 var validExtensions = options.Extensions.Select(ext => "." + ext.ToLower());
@@ -53,6 +54,8 @@ class FileProcessor
                 archive.ExtractToDirectory(options.OutputPath, true);
                 archive.Dispose();
                 IsProcessed = true;
+            } else {
+                throw new Exception($"Missing index file {options.IndexFileName}.");
             }
         } catch(Exception e) {
             logger.Error($"Error occurred while processing archive '{options.ArchiveName}': {e.Message}");

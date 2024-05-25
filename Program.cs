@@ -1,19 +1,28 @@
-﻿var logger = new Logger();
+﻿using Microsoft.Extensions.Configuration;
+
+var logger = new Logger();
 var fileprocessor = new FileProcessor(logger);
+
+IConfiguration configuration = new ConfigurationBuilder()
+    .AddJsonFile("appsettings.json")
+    .Build();
 
 string[] argz = Environment.GetCommandLineArgs();
 
-string archiveName = argz.Count() == 2 ? argz[1] : "sample.zip";
+string archiveName = configuration["defaultArchive"] ?? "sample.zip";
+if( argz.Length == 2 ) {
+    archiveName = argz[1];
+}
 var defaultExtensions = "pdf;xls;xlsx;doc;docx;msg;png";
 
 var fpOptions = new FileProcessorOptions() {
     ArchiveName = archiveName,
-    IndexFileName = "party.xml",
-    NameXmlPath = "party/name",
-    EmailXmlPath = "party/email",
-    ApplicationNoPath = "party/applicationno",
-    Extensions = defaultExtensions.Split(";").ToList(),
-    BasePath = "processed/"
+    IndexFileName = configuration["indexfile"] ?? "party.xml",
+    NameXmlPath = configuration["xmlpaths:name"] ?? "party/name",
+    EmailXmlPath = configuration["xmlpaths:email"] ?? "party/email",
+    ApplicationNoPath = configuration["xmlpaths:applicationno"] ?? "party/applicationno",
+    Extensions = (configuration["extensions"] ?? defaultExtensions).Split(";").ToList(),
+    BasePath = configuration["basepath"] ?? "processed/"
 };
 
 if( fileprocessor.ProcessArchive(fpOptions) ) {
