@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using System.Xml.Linq;
 using System.Xml.XPath;
+using Microsoft.Extensions.Configuration;
 
 public class FileProcessorOptions
 {
@@ -17,16 +18,20 @@ public class FileProcessorOptions
 class FileProcessor
 {
     ILogger logger;
+    IConfiguration configuration;
+    IEmailService emailService;
 
-    public FileProcessor(ILogger logger)
+    public FileProcessor(ILogger logger, IEmailService emailService, IConfiguration configuration)
     {
         this.logger = logger;
+        this.configuration = configuration;
+        this.emailService = emailService;
     }
 
     public bool ProcessArchive(FileProcessorOptions options)
     {
         bool IsProcessed = false;
-
+        logger.Info($"Attempting to process '{options.ArchiveName}'");
         try {
             ZipArchive archive = ZipFile.OpenRead(Path.GetFullPath(options.ArchiveName));
             var indexfile = archive.Entries.ToList().Find(e => string.Compare(e.FullName, options.IndexFileName, StringComparison.InvariantCultureIgnoreCase) == 0);
@@ -58,7 +63,16 @@ class FileProcessor
                 throw new Exception($"Missing index file {options.IndexFileName}.");
             }
         } catch(Exception e) {
-            logger.Error($"Error occurred while processing archive '{options.ArchiveName}': {e.Message}");
+            var msg = $"Error occurred while processing archive '{options.ArchiveName}': {e.Message}";
+            logger.Error(msg);
+            var to = configuration["email:to"] ?? String.Empty;
+            var from = configuration["email:from"] ?? String.Empty;
+            var subject = configuration["email:subject"] ?? String.Empty;
+            if( to != "" && from != "" && subject != "" ) {
+                emailService.Email(to, from, subject, msg);
+            } else {
+                // is a fallback required?
+            }
         }
 
         return IsProcessed;

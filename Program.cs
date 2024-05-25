@@ -1,12 +1,15 @@
 ﻿using Microsoft.Extensions.Configuration;
 
+
 var logger = new Logger();
-var fileprocessor = new FileProcessor(logger);
+
 
 IConfiguration configuration = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json")
     .Build();
 
+var emailService = new EmailService(configuration);
+var fileprocessor = new FileProcessor(logger, emailService, configuration);
 string[] argz = Environment.GetCommandLineArgs();
 
 string archiveName = configuration["defaultArchive"] ?? "sample.zip";
