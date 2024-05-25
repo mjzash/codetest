@@ -1,0 +1,4 @@
+*.zip
+processed
+obj
+bin
